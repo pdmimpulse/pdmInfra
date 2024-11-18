@@ -26,6 +26,7 @@ class InferenceClass:
     streaming (bool): Whether to stream the completion. Default is False.
     tool_pack (list): The tool pack to use for the completion.
     structured_output (dict): The structured output to use for the completion.
+    cost_tracker (bool): Whether to track the cost of the completion. Default is False.
     seed (int): The seed to use for the completion.
 
     Returns:
@@ -40,6 +41,7 @@ class InferenceClass:
     tool_pack = None
     structured_output = None
     seed : int = None
+    cost_tracker : bool = False
     api_key: str
 
     def infer(self, api_key: str = None, user_message: str = None, chat_history = None, temperature: float = None, streaming: bool = None, tool_pack = None, structured_output = None, seed: int = None):
@@ -61,7 +63,8 @@ class InferenceClass:
             self.structured_output = structured_output
         if seed:
             self.seed = seed
-        
+        if cost_tracker:
+            self.cost_tracker = cost_tracker
 
         if not self.system_message:
             raise ValueError("System message is required")
@@ -81,7 +84,8 @@ class InferenceClass:
             streaming = self.streaming, 
             tool_pack = self.tool_pack, 
             structured_output = self.structured_output, 
-            seed = self.seed)
+            seed = self.seed, 
+            cost_tracker = self.cost_tracker)
         return output
 
     
@@ -96,7 +100,7 @@ def retry(func):
                 continue
     return wrapper
 
-def inference(system_message, model: str, api_key: str, user_message = None, chat_history: list = None, temperature : float = 0, streaming: bool = False, tool_pack = None, structured_output = None, seed: int = None):
+def inference(system_message, model: str, api_key: str, user_message = None, chat_history: list = None, temperature : float = 0, streaming: bool = False, tool_pack = None, structured_output = None, seed: int = None, cost_tracker: bool = False):
     """
     This function sends a request to the OpenAI API to generate a completion for a given model.
     
@@ -207,17 +211,22 @@ def inference(system_message, model: str, api_key: str, user_message = None, cha
                             except json.JSONDecodeError:
                                 print(f"Error decoding JSON: {line}")
             return generate()
+
         
         if tool_pack:
             try: 
                 response.json()['choices'][0]['message']['tool_calls']
-                return openai_function_call_extraction(response.json())
+                output = openai_function_call_extraction(response.json())
             except:
-                return openai_chat_content_extraction(response.json())
+                output = openai_chat_content_extraction(response.json())
         elif structured_output:
             # return response.json()
-            return openai_structured_output_extraction(response.json())
+            output = openai_structured_output_extraction(response.json())
         else: 
-            return openai_chat_content_extraction(response.json())
+            output = openai_chat_content_extraction(response.json())
         
+        if cost_tracker:
+            usage = response.json()['usage']
+            output = (output, usage)
 
+        return output
