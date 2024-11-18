@@ -58,38 +58,15 @@ response = llm.infer(
 )
 ```
 
-### 2. AWS Module
-
-#### S3 Operations
-- Simple interface for common S3 operations:
-  - Create/delete buckets
-  - Upload/download objects
-  - List buckets and objects
-  - Delete objects
-
-Example usage:
-
-```python
-from pdmInfra.aws.s3 import s3_put_object, s3_get_object
-
-# Upload data to S3
-s3_put_object("my-bucket", "data.json", {"key": "value"})
-
-# Retrieve data from S3
-data = s3_get_object("my-bucket", "data.json")
-```
-
 ## Configuration
 
 The library includes configuration parameters for:
 - Valid LLM models
 - API endpoints
-- AWS region settings
 
 ## Requirements
 
 - Python 3.6+
-- boto3 for AWS operations
 - requests for API calls
 
 ## License
