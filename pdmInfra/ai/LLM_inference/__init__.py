@@ -146,7 +146,15 @@ def inference(system_message, model: str, api_key: str, user_message = None, cha
     if isopenai:
         
         # Prepare the payload
+
+        payload = {
+            "model": model,
+            "messages": None,
+            "stream": streaming
+        }
+
         ## combine messages
+
         if model not in ['o1-mini', 'o1-preview']:
             messages = [
                 {"role": "system", "content": system_message}
@@ -159,6 +167,7 @@ def inference(system_message, model: str, api_key: str, user_message = None, cha
             # Add user message
             if user_message:
                 messages.append({"role": "user", "content": user_message})
+            payload["temperature"] = temperature
         else: 
             if structured_output:
                 raise ValueError("Structured output is not supported for o1-mini and o1-preview")
@@ -174,13 +183,9 @@ def inference(system_message, model: str, api_key: str, user_message = None, cha
                 if user_message:
                     messages = [{"role": "user", "content": system_message + "\n" + user_message}]
 
-        payload = {
-            "model": model,
-            "temperature": temperature,
-            "messages": messages,
-            "stream": streaming
-        }
+        payload["messages"] = messages
 
+        
         if seed:
             payload["seed"] = seed
 
