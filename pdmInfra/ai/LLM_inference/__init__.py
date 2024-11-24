@@ -44,7 +44,7 @@ class InferenceClass:
     cost_tracker : bool = False
     api_key: str
 
-    def infer(self, api_key: str = None, user_message: str = None, chat_history = None, temperature: float = None, streaming: bool = None, tool_pack = None, structured_output = None, seed: int = None):
+    def infer(self, api_key: str = None, user_message: str = None, chat_history = None, temperature: float = None, streaming: bool = None, tool_pack = None, structured_output = None, seed: int = None, cost_tracker: bool = None):
         if api_key:
             self.api_key = api_key
         if user_message:
