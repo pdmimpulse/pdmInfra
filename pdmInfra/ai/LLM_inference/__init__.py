@@ -147,18 +147,32 @@ def inference(system_message, model: str, api_key: str, user_message = None, cha
         
         # Prepare the payload
         ## combine messages
-        messages = [
-            {"role": "system", "content": system_message}
-        ]
-        # Add chat history
-        if chat_history:
-            if isinstance(chat_history, openai_message_history):
-                chat_history = chat_history.chat_history
-            messages.extend(chat_history)
-        # Add user message
-        if user_message:
-            messages.append({"role": "user", "content": user_message})
-    
+        if model not in ['o1-mini', 'o1-preview']:
+            messages = [
+                {"role": "system", "content": system_message}
+            ]
+            # Add chat history
+            if chat_history:
+                if isinstance(chat_history, openai_message_history):
+                    chat_history = chat_history.chat_history
+                messages.extend(chat_history)
+            # Add user message
+            if user_message:
+                messages.append({"role": "user", "content": user_message})
+        else: 
+            if structured_output:
+                raise ValueError("Structured output is not supported for o1-mini and o1-preview")
+            if tool_pack:
+                raise ValueError("Tool packs are not supported for o1-mini and o1-preview")
+            if chat_history:
+                if isinstance(chat_history, openai_message_history):
+                    chat_history = chat_history.chat_history
+                messages = chat_history
+                if user_message:
+                    messages = [{"role": "user", "content": user_message}]
+            else:
+                if user_message:
+                    messages = [{"role": "user", "content": system_message + "\n" + user_message}]
 
         payload = {
             "model": model,
