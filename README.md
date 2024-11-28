@@ -8,7 +8,7 @@ A Python infrastructure library for AI application development, providing tools 
 Install via pip:
 
 ```bash
-pip install pdmInfra
+pip install git+https://github.com/pdmimpulse/pdmInfra.git@0.1.1
 ```
 
 ## Features
