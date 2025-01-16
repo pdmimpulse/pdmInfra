@@ -26,7 +26,6 @@ class InferenceClass:
     streaming (bool): Whether to stream the completion. Default is False.
     tool_pack (list): The tool pack to use for the completion.
     structured_output (dict): The structured output to use for the completion.
-    cost_tracker (bool): Whether to track the cost of the completion. Default is False.
     seed (int): The seed to use for the completion.
 
     Returns:
@@ -41,7 +40,6 @@ class InferenceClass:
     tool_pack = None
     structured_output = None
     seed : int = None
-    cost_tracker : bool = False
     api_key: str
 
     def infer(self, api_key: str = None, user_message: str = None, chat_history = None, temperature: float = None, streaming: bool = None, tool_pack = None, structured_output = None, seed: int = None):
@@ -63,8 +61,6 @@ class InferenceClass:
             self.structured_output = structured_output
         if seed:
             self.seed = seed
-        if cost_tracker:
-            self.cost_tracker = cost_tracker
 
         if not self.system_message:
             raise ValueError("System message is required")
@@ -224,9 +220,5 @@ def inference(system_message, model: str, api_key: str, user_message = None, cha
             output = openai_structured_output_extraction(response.json())
         else: 
             output = openai_chat_content_extraction(response.json())
-        
-        if cost_tracker:
-            usage = response.json()['usage']
-            output = (output, usage)
 
         return output
