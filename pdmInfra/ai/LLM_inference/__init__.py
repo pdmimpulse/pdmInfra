@@ -26,7 +26,7 @@ class InferenceClass:
     streaming (bool): Whether to stream the completion. Default is False.
     tool_pack (list): The tool pack to use for the completion.
     structured_output (dict): The structured output to use for the completion.
-    cost_tracker (bool): Whether to track the cost of the completion Default is False.
+    cost_tracker (bool): Whether to track the cost of the completion. Default is False.
     seed (int): The seed to use for the completion.
 
     Returns:
@@ -41,9 +41,10 @@ class InferenceClass:
     tool_pack = None
     structured_output = None
     seed : int = None
+    cost_tracker : bool = False
     api_key: str
 
-    def infer(self, api_key: str = None, user_message: str = None, chat_history = None, temperature: float = None, streaming: bool = None, tool_pack = None, structured_output = None, seed: int = None):
+    def infer(self, api_key: str = None, user_message: str = None, chat_history = None, temperature: float = None, streaming: bool = None, tool_pack = None, structured_output = None, seed: int = None, cost_tracker: bool = None):
         if api_key:
             self.api_key = api_key
         if user_message:
@@ -62,7 +63,8 @@ class InferenceClass:
             self.structured_output = structured_output
         if seed:
             self.seed = seed
-
+        if cost_tracker:
+            self.cost_tracker = cost_tracker
 
         if not self.system_message:
             raise ValueError("System message is required")
@@ -82,7 +84,8 @@ class InferenceClass:
             streaming = self.streaming, 
             tool_pack = self.tool_pack, 
             structured_output = self.structured_output, 
-            seed = self.seed)
+            seed = self.seed, 
+            cost_tracker = self.cost_tracker)
         return output
 
     
@@ -143,27 +146,46 @@ def inference(system_message, model: str, api_key: str, user_message = None, cha
     if isopenai:
         
         # Prepare the payload
-        ## combine messages
-        messages = [
-            {"role": "system", "content": system_message}
-        ]
-        # Add chat history
-        if chat_history:
-            if isinstance(chat_history, openai_message_history):
-                chat_history = chat_history.chat_history
-            messages.extend(chat_history)
-        # Add user message
-        if user_message:
-            messages.append({"role": "user", "content": user_message})
-    
 
         payload = {
             "model": model,
-            "temperature": temperature,
-            "messages": messages,
+            "messages": None,
             "stream": streaming
         }
 
+        ## combine messages
+
+        if model not in ['o1-mini', 'o1-preview']:
+            messages = [
+                {"role": "system", "content": system_message}
+            ]
+            # Add chat history
+            if chat_history:
+                if isinstance(chat_history, openai_message_history):
+                    chat_history = chat_history.chat_history
+                messages.extend(chat_history)
+            # Add user message
+            if user_message:
+                messages.append({"role": "user", "content": user_message})
+            payload["temperature"] = temperature
+        else: 
+            if structured_output:
+                raise ValueError("Structured output is not supported for o1-mini and o1-preview")
+            if tool_pack:
+                raise ValueError("Tool packs are not supported for o1-mini and o1-preview")
+            if chat_history:
+                if isinstance(chat_history, openai_message_history):
+                    chat_history = chat_history.chat_history
+                messages = chat_history
+                if user_message:
+                    messages = [{"role": "user", "content": user_message}]
+            else:
+                if user_message:
+                    messages = [{"role": "user", "content": system_message + "\n" + user_message}]
+
+        payload["messages"] = messages
+
+        
         if seed:
             payload["seed"] = seed
 

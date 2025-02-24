@@ -25,6 +25,10 @@ class Field:
             raise TypeError("Array type must have either children or array_type")
         if field_type == "array" and children and array_type:
             raise TypeError("Cannot have both children and array_type")
+        if field_type == "object" and not children:
+            raise TypeError("Object type must have children")
+        if field_type == "object" and array_type:
+            raise TypeError("Object type cannot have array_type")
         
 
 class structuredOutputBaseModel:
@@ -89,7 +93,10 @@ class structuredOutputBaseModel:
                             raise ValueError("Children attribute must be a subclass of JsonSchemaBaseModel")
                     elif array_type:
                         property_schema["items"] = {"type": array_type}
-
+                elif attr_value.field_type == "object":
+                    if not isinstance(attr_value.children, type) or not issubclass(attr_value.children, structuredOutputBaseModel):
+                        raise ValueError("Object children must be a subclass of structuredOutputBaseModel")
+                    property_schema = attr_value.children.generate_structured_output()["json_schema"]["schema"]
 
                 schema["json_schema"]["schema"]["required"].append(attr_name)
 
@@ -149,6 +156,10 @@ class functionCallingBaseModel:
                             raise ValueError("Children attribute must be a subclass of JsonSchemaBaseModel")
                     elif array_type:
                         property_schema["items"] = {"type": array_type}
+                elif attr_value.field_type == "object":
+                    if not isinstance(attr_value.children, type) or not issubclass(attr_value.children, functionCallingBaseModel):
+                        raise ValueError("Object children must be a subclass of functionCallingBaseModel")
+                    property_schema = attr_value.children.generate_function_tool()["function"]["parameters"]
                         
                 if not attr_value.optional:
                     schema["function"]["parameters"]["required"].append(attr_name)
