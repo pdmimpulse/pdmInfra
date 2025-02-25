@@ -4,9 +4,7 @@ Here's a design documentation for the PDM Infrastructure Library:
 
 ## 1. System Overview
 
-The PDM Infrastructure Library is designed to provide a unified interface for AI application development, focusing on two main components:
-- AI Module: LLM integration and structured output handling
-- AWS Module: Cloud infrastructure utilities
+The PDM Infrastructure Library is designed to provide a unified interface for AI application development, with a primary focus on the AI Module that enables seamless integration with multiple Large Language Model (LLM) providers through a consistent API.
 
 ## 2. Architecture
 
@@ -14,222 +12,306 @@ The PDM Infrastructure Library is designed to provide a unified interface for AI
 
 #### AI Module
 
-```1:7:pdmInfra/ai/LLM_inference/__init__.py
-"""
-This modules sends a request to LLM APIs across different providers. This aims to provide a unified interface for different LLM APIs.
-The best practice is to create a InferenceClass object for individual use cases and name the object as per the use case.
+The AI module implements a provider-agnostic architecture with three main components:
 
-Currently only supports OpenAI, which offers the most capability from their models. 
-We aim to emulate these capabilities in other models through prompt engineering and other techniques here.
-"""
-```
-
-
-The AI module consists of three main components:
 1. **LLM Inference Engine**
-   - Unified interface for multiple LLM providers
-   - Currently supports OpenAI with plans for Mistral and Anthropic
-   - Handles streaming, function calling, and structured outputs
+   - Unified interface through `InferenceClass`
+   - Provider-specific implementations:
+     - OpenAI (standard and reasoning models)
+     - Anthropic Claude
+     - Mistral AI
+   - Common features across providers:
+     - Streaming responses
+     - Function/tool calling
+     - Structured outputs
+     - Message history management
 
 2. **Schema Management**
-   - Custom JSON schema implementation
+   - Provider-agnostic schema definitions
    - Two base models:
      - `structuredOutputBaseModel`: For structured LLM outputs
-     - `functionCallingBaseModel`: For function calling tools
+     - `functionCallingBaseModel`: For function/tool definitions
+   - Automatic schema translation for each provider's format
 
 3. **Message History Management**
-   - Tracks conversation history
-   - Manages tool calls and responses
-   - Ensures message order consistency
-
-#### AWS Module
-Simple interface for AWS services, currently implementing:
-- S3 operations (create, read, update, delete)
-- Future plans for other AWS services
+   - Universal chat history tracking
+   - Cross-provider message format handling
+   - Tool calls and response management
+   - Message order validation
 
 ### 2.2 Class Structure
 
 #### InferenceClass
-Primary interface for LLM interactions:
+Primary interface for all LLM interactions:
 
-```16:34:pdmInfra/ai/LLM_inference/__init__.py
+```python
 class InferenceClass:
     """
-    This class is used to create a llm module. It allows you to set the parameters and reuse the same setting by recalling the object. 
-
-    Args:
-    system_message (str): The system message to start the conversation.
-    user_message (str): The user message to continue the conversation.
-    model (str): The model to use for the completion.
-    chat_history (list): The chat history to include in the completion.
-    temperature (float): The temperature to use for the completion. Default is 0.
-    streaming (bool): Whether to stream the completion. Default is False.
-    tool_pack (list): The tool pack to use for the completion.
-    structured_output (dict): The structured output to use for the completion.
-    cost_tracker (bool): Whether to track the cost of the completion. Default is False.
-    seed (int): The seed to use for the completion.
-
-    Returns:
-    dict: The completion response from the OpenAI API.
-    """
-```
-
-
-#### Field Class
-Base class for schema definition:
-
-```5:29:pdmInfra/ai/json_schema.py
-class Field:
-    """
-    This class represents a field in a JSON schema.
-
+    Unified interface for multiple LLM providers
+    
     Attributes:
-        description (str): The description of the field.
-        field_type (str): The type of the field. By default it is "string". Other possible types: ['string', 'number', 'integer', 'boolean', 'array', 'object'].
-        optional (bool): Whether the field is an optional field. By default it is False.
-        enum (list): The list of possible values for the field. By default it is None.
-        children ($customBaseModel): The children schema for the field. By default it is None.
+        system_message (str): Initial system prompt
+        model (str): Provider-specific model identifier
+        temperature (float, optional): Response randomness (0-1)
+        streaming (bool): Enable streaming responses
+        tool_pack (list/dict): Function calling tools
+        structured_output (dict): Output schema
+        cost_tracker (bool): Track token usage
+        seed (int, optional): Reproducibility seed
+        max_tokens (int, optional): Response length limit
+        reasoning_effort (str, optional): For OpenAI reasoning models
     """
-
-    def __init__(self, description = None, field_type="string", optional=False, enum=None, children=None, array_type = None):
-        self.description = description
-        self.field_type = field_type
-        self.optional = optional
-        self.enum = enum
-        self.children = children
-        self.array_type = array_type
-        if field_type == "array" and not children and not array_type:
-            raise TypeError("Array type must have either children or array_type")
-        if field_type == "array" and children and array_type:
-            raise TypeError("Cannot have both children and array_type")
 ```
 
+#### Provider-Specific Implementations
+
+1. **OpenAI Provider**
+   ```python
+   def openai_inference(
+       system_message: str,
+       model: str,
+       api_key: str,
+       user_message=None,
+       chat_history=None,
+       temperature: float = 0,
+       streaming: bool = False,
+       tool_pack=None,
+       structured_output=None,
+       seed: int = None,
+       cost_tracker: bool = False,
+       reasoning_effort: str = None
+   )
+   ```
+
+2. **Anthropic Provider**
+   ```python
+   def anthropic_inference(
+       system_message: str,
+       model: str,
+       api_key: str,
+       user_message=None,
+       chat_history=None,
+       streaming: bool = False,
+       tool_pack=None,
+       structured_output=None
+   )
+   ```
+
+3. **Mistral Provider**
+   ```python
+   def mistral_inference(
+       system_message: str,
+       model: str,
+       api_key: str,
+       user_message=None,
+       chat_history=None,
+       temperature: float = 0,
+       streaming: bool = False,
+       structured_output=None,
+       tool_pack=None,
+       max_tokens: int = None
+   )
+   ```
+
+#### Schema System
+
+1. **Field Class**
+   ```python
+   class Field:
+       """
+       Schema field definition
+       
+       Attributes:
+           description (str): Field description
+           field_type (str): Data type
+           optional (bool): Optional flag
+           enum (list): Allowed values
+           children (BaseModel): Nested schema
+           array_type (str): Array item type
+       """
+   ```
+
+2. **Base Schema Models**
+   ```python
+   class structuredOutputBaseModel:
+       """Base class for output schemas"""
+       @classmethod
+       def generate_structured_output(cls, provider="openai")
+
+   class functionCallingBaseModel:
+       """Base class for function/tool definitions"""
+       @classmethod
+       def generate_function_tool(cls, provider)
+   ```
 
 ## 3. Key Design Decisions
 
-### 3.1 Schema Implementation
-- Custom implementation instead of Pydantic
-- Reasons:
-  - Reduced dependencies
-  - Simplified boilerplate
-  - Better control over schema generation
-  - Direct integration with LLM APIs
+### 3.1 Provider Abstraction
+- Single interface (`InferenceClass`) for all providers
+- Provider-specific implementations hidden from end users
+- Automatic routing based on model selection
+- Consistent error handling across providers
 
-### 3.2 Error Handling
-- Implemented retry mechanism for API calls
+### 3.2 Schema System
+- Custom implementation for cross-provider compatibility
+- Automatic schema translation for each provider
+- Support for nested schemas and complex types
+- Validation at schema definition time
 
-```93:101:pdmInfra/ai/LLM_inference/__init__.py
-def retry(func):
-    def wrapper(*args, **kwargs):
-        for i in range(3):
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                print(e)
-                continue
-    return wrapper
-```
-
-
-### 3.3 Message History Management
+### 3.3 Message History
+- Universal history format
+- Automatic conversion for provider-specific formats
 - Strict message ordering enforcement
-- Type checking for message additions
-- Support for function calls and tool responses
+- Support for all message types (chat, function calls, tool responses)
 
 ## 4. Data Flow
 
-### 4.1 LLM Request Flow
-1. User creates InferenceClass instance
-2. Parameters validated
-3. Request formatted based on model provider
-4. Response processed through appropriate extractor
-5. Structured output or function calls handled
-6. Results returned to user
+### 4.1 Request Flow
+1. User creates `InferenceClass` instance
+2. Model selection determines provider
+3. Parameters validated for provider compatibility
+4. Request formatted for specific provider
+5. Provider-specific API called
+6. Response processed and normalized
+7. Results returned in consistent format
 
-### 4.2 Schema Generation Flow
-1. User defines model class
-2. Fields processed during generation
-3. Nested schemas handled recursively
-4. Final schema formatted for API consumption
+### 4.2 Schema Processing
+1. Schema defined using base models
+2. Provider determined at runtime
+3. Schema translated to provider format
+4. Response validated against schema
+5. Normalized output returned
 
-## 5. Configuration Management
+## 5. Provider-Specific Features
 
-### 5.1 LLM Configuration
+### 5.1 OpenAI
+- Standard and reasoning models
+- Reasoning effort levels
+- Cost tracking
+- Seed support
 
-```7:12:pdmInfra/ai/param.py
-validLLMList = ['gpt-4o-2024-08-06', 'gpt-4o-mini-2024-07-18', 'gpt-4o', 'gpt-4o-mini']
-openaiLLMList = ['gpt-4o-2024-08-06', 'gpt-4o-mini-2024-07-18', 'gpt-4o', 'gpt-4o-mini']
-pplxLLMList = []
-mistralLLMList = []
+### 5.2 Anthropic
+- High token limits (64,000)
+- System message handling
+- Specialized message formatting
 
-openaiURL = "https://api.openai.com/v1/chat/completions"
+### 5.3 Mistral
+- Temperature control
+- Max tokens limit
+- Structured output support
+
+## 6. Error Handling
+
+### 6.1 Validation Layers
+1. Input Validation
+   - API key format
+   - Model compatibility
+   - Parameter constraints
+
+2. Runtime Validation
+   - API responses
+   - Schema compliance
+   - Message ordering
+
+3. Provider-Specific Validation
+   - Feature compatibility
+   - Response formats
+   - Error messages
+
+### 6.2 Error Categories
+1. Authentication Errors
+   - Invalid API keys
+   - Missing credentials
+   - Provider-specific formats
+
+2. Compatibility Errors
+   - Unsupported features
+   - Invalid combinations
+   - Provider limitations
+
+3. Schema Errors
+   - Invalid definitions
+   - Validation failures
+   - Format mismatches
+
+## 7. Configuration
+
+### 7.1 Supported Models
+```python
+# OpenAI Models
+openaiNormalLLMList = [
+    'gpt-4o-2024-08-06',
+    'gpt-4o-mini-2024-07-18',
+    'gpt-4o',
+    'gpt-4o-mini'
+]
+openaiReasoningLLMList = [
+    "o1-2024-12-17",
+    "o3-mini"
+]
+
+# Anthropic Models
+anthropicLLMList = [
+    "claude-3-7-sonnet-20250219",
+    "claude-3-5-sonnet-20241022",
+    "claude-3-5-haiku-20241022"
+]
+
+# Mistral Models
+mistralLLMList = [
+    "mistral-large-latest",
+    "mistral-small"
+]
 ```
 
-
-### 5.2 AWS Configuration
-- Region-based configuration
-- Credential management through boto3
-
-## 6. Future Enhancements
-
-### 6.1 Planned Features
-1. Additional LLM Providers
-   - Anthropic Claude
-   - Mistral AI
-   - Local models
-
-2. AWS Services
-   - Lambda integration
-   - DynamoDB support
-   - SageMaker deployment
-
-3. Enhanced Features
-   - Automated cost optimization
-   - Response caching
-   - Parallel inference
-   - Enhanced error handling
-
-### 6.2 Technical Debt
-1. Add comprehensive test suite
-2. Implement logging system
-3. Add input validation for all AWS operations
-4. Enhance documentation with more examples
-
-## 7. Dependencies
-
-### Required
-- requests: HTTP client
-- boto3: AWS SDK
-- json: JSON parsing
-
-### Optional
-- logging: Error tracking
-- typing: Type hints
+### 7.2 API Endpoints
+```python
+openaiURL = "https://api.openai.com/v1/chat/completions"
+anthropicURL = "https://api.anthropic.com/v1/messages"
+mistralURL = "https://api.mistral.ai/v1/chat/completions"
+```
 
 ## 8. Security Considerations
 
-1. API Key Management
-   - Keys passed per request
-   - No key storage in code
-   - Environment variable support
+### 8.1 API Key Management
+- No key storage in code
+- Provider-specific key validation
+- Per-request key usage
 
-2. AWS Security
-   - IAM role support
-   - Minimal permission principle
-   - Region-specific operations
+### 8.2 Data Handling
+- No response caching by default
+- Secure message history management
+- Clean error messages
 
-## 9. Performance Considerations
+## 9. Future Enhancements
 
-1. Retry Mechanism
-   - 3 attempts for failed requests
-   - Exponential backoff recommended
+### 9.1 Additional Providers
+- Google (Gemini)
+- Perplexity
+- Meta
+- DeepSeek
+- Hugging Face
 
-2. Memory Management
-   - Streaming support for large responses
-   - Efficient message history handling
+### 9.2 Feature Enhancements
+- Cross-provider cost optimization
+- Automatic fallback mechanisms
+- Enhanced streaming capabilities
+- Improved error handling
 
-3. Response Processing
-   - Dedicated extractors for different response types
-   - Error handling for malformed responses
+### 9.3 Performance Improvements
+- Response caching
+- Parallel inference
+- Rate limiting
+- Batch processing
 
-This documentation provides a comprehensive overview of the library's design and architecture while maintaining future extensibility and security considerations.
+## 10. Dependencies
+
+### Required
+- requests: HTTP client
+- json: JSON parsing
+
+### Optional
+- typing: Type hints
+- logging: Error tracking
+
+This design documentation reflects the current state of the PDM Infrastructure Library, with a focus on its multi-provider architecture and unified interface design. The documentation will be updated as new providers and features are added to the system.

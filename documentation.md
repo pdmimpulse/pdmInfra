@@ -1,273 +1,417 @@
 # PDM Infrastructure - AI Module Documentation
 
 ## Overview
-The AI module provides a unified interface for interacting with Large Language Models (LLMs), with a focus on structured outputs and function calling capabilities.
+The PDM Infrastructure AI Module provides a unified interface for interacting with multiple Large Language Model (LLM) providers through a single, consistent API. The module abstracts away provider-specific implementations while maintaining full access to each provider's unique capabilities.
 
-## Core Components
+## Table of Contents
+1. [Key Features](#key-features)
+2. [Installation](#installation)
+3. [Quick Start](#quick-start)
+4. [Core Components](#core-components)
+5. [Advanced Usage](#advanced-usage)
+6. [Provider-Specific Features](#provider-specific-features)
+7. [Best Practices](#best-practices)
+8. [Error Handling](#error-handling)
+9. [Limitations](#limitations)
+10. [Future Enhancements](#future-enhancements)
 
-### 1. InferenceClass
-The primary interface for LLM interactions.
+## Key Features
 
-#### Basic Usage
+### 1. Multi-Provider Support
+Currently supports:
+- OpenAI (including specialized reasoning models)
+- Anthropic Claude
+- Mistral AI
+
+### 2. Unified Interface
+All providers are accessed through the same `InferenceClass`, which handles:
+- Provider-specific API routing
+- Message history management
+- Structured output formatting
+- Function/tool calling
+- Streaming responses
+
+### 3. Schema Management
+- Structured output definitions
+- Function/tool calling schemas
+- Cross-provider compatibility
+
+## Installation
+
+```bash
+pip install pdm-infra
+```
+
+## Quick Start
+
+### Basic Usage
 ```python
 from pdmInfra.ai import InferenceClass
 
+# Initialize the LLM interface
 llm = InferenceClass()
 llm.system_message = "You are a helpful assistant."
 llm.model = "gpt-4o"
 
+# Get a response
 response = llm.infer(
     api_key="your-api-key",
-    user_message="Hello, world!"
+    user_message="What's the weather like today?"
+)
+print(response)
+```
+
+### Switching Providers
+```python
+# Use Anthropic
+llm.model = "claude-3-7-sonnet-20250219"
+response = llm.infer(
+    api_key="your-anthropic-key",
+    user_message="Explain quantum computing"
+)
+
+# Use Mistral
+llm.model = "mistral-large-latest"
+response = llm.infer(
+    api_key="your-mistral-key",
+    user_message="Summarize this article"
 )
 ```
 
+## Core Components
+
+### 1. InferenceClass
+The primary interface for all LLM interactions.
+
 #### Key Parameters
-Reference to full parameter list:
+- `system_message` (str): Initial system prompt
+- `model` (str): Model identifier
+- `temperature` (float): Response randomness (0-1)
+- `streaming` (bool): Enable streaming responses
+- `tool_pack` (list/dict): Function calling tools
+- `structured_output` (dict): Output schema
+- `cost_tracker` (bool): Track token usage
+- `seed` (int): Reproducibility seed
+- `max_tokens` (int): Response length limit
 
-```17:34:pdmInfra/ai/LLM_inference/__init__.py
-    """
-    This class is used to create a llm module. It allows you to set the parameters and reuse the same setting by recalling the object. 
+#### Supported Models
 
-    Args:
-    system_message (str): The system message to start the conversation.
-    user_message (str): The user message to continue the conversation.
-    model (str): The model to use for the completion.
-    chat_history (list): The chat history to include in the completion.
-    temperature (float): The temperature to use for the completion. Default is 0.
-    streaming (bool): Whether to stream the completion. Default is False.
-    tool_pack (list): The tool pack to use for the completion.
-    structured_output (dict): The structured output to use for the completion.
-    cost_tracker (bool): Whether to track the cost of the completion. Default is False.
-    seed (int): The seed to use for the completion.
+##### OpenAI Models
+Standard Models:
+- `gpt-4o-2024-08-06`
+- `gpt-4o-mini-2024-07-18`
+- `gpt-4o`
+- `gpt-4o-mini`
 
-    Returns:
-    dict: The completion response from the OpenAI API.
-    """
-```
+Reasoning Models:
+- `o1-2024-12-17`
+- `o3-mini`
 
+##### Anthropic Models
+- `claude-3-7-sonnet-20250219`
+- `claude-3-5-sonnet-20241022`
+- `claude-3-5-haiku-20241022`
+
+##### Mistral Models
+- `mistral-large-latest`
+- `mistral-small`
 
 ### 2. Message History Management
-The `openai_message_history` class manages conversation history with strict ordering rules.
-
-#### Features:
-- Maintains message order integrity
-- Supports user messages, assistant responses, function calls, and tool responses
-- Validates message sequence
-
-Example:
 ```python
 from pdmInfra.ai.LLM_inference.openai_tools import openai_message_history
 
+# Initialize chat history
 history = openai_message_history()
-history.add_user_message("What's the weather?")
+
+# Add messages
+history.add_user_message("What's the weather like?")
 history.add_assistant_message("Let me check that for you.")
+
+# Use in inference
+llm.infer(
+    api_key="your-api-key",
+    chat_history=history
+)
 ```
 
 ### 3. Schema Management
 
-#### Field Class
-Base class for defining schema fields:
-
-```5:27:pdmInfra/ai/json_schema.py
-class Field:
-    """
-    This class represents a field in a JSON schema.
-
-    Attributes:
-        description (str): The description of the field.
-        field_type (str): The type of the field. By default it is "string". Other possible types: ['string', 'number', 'integer', 'boolean', 'array', 'object'].
-        optional (bool): Whether the field is an optional field. By default it is False.
-        enum (list): The list of possible values for the field. By default it is None.
-        children ($customBaseModel): The children schema for the field. By default it is None.
-    """
-
-    def __init__(self, description = None, field_type="string", optional=False, enum=None, children=None, array_type = None):
-        self.description = description
-        self.field_type = field_type
-        self.optional = optional
-        self.enum = enum
-        self.children = children
-        self.array_type = array_type
-        if field_type == "array" and not children and not array_type:
-            raise TypeError("Array type must have either children or array_type")
-        if field_type == "array" and children and array_type:
-            raise TypeError("Cannot have both children and array_type")
-```
-
-
-#### Available Field Types
-- string (default)
-- number
-- integer
-- boolean
-- array
-- object
-
-#### structuredOutputBaseModel
-Base class for creating structured output schemas.
-
-Example:
+#### Structured Output
 ```python
 from pdmInfra.ai.json_schema import structuredOutputBaseModel, Field
 
 class WeatherResponse(structuredOutputBaseModel):
-    """Schema for weather information"""
+    """Weather information schema"""
     temperature = Field(
-        description="Current temperature",
+        description="Current temperature in Celsius",
         field_type="number"
     )
     conditions = Field(
         description="Weather conditions",
-        enum=["sunny", "rainy", "cloudy"]
+        enum=["sunny", "rainy", "cloudy", "snowy"]
     )
-    hourly_forecast = Field(
-        description="Hourly temperature forecast",
+    forecast = Field(
+        description="24-hour forecast",
         field_type="array",
-        array_type="number"
+        array_type="string"
     )
+
+# Use the schema
+llm.structured_output = WeatherResponse
+response = llm.infer(
+    api_key="your-api-key",
+    user_message="What's the weather like in New York?"
+)
 ```
 
-#### functionCallingBaseModel
-Base class for defining function calling tools.
-
-Example:
+#### Function/Tool Calling
 ```python
 from pdmInfra.ai.json_schema import functionCallingBaseModel, Field
 
-class SearchDatabase(functionCallingBaseModel):
-    """Search the database for specific records"""
+class DatabaseQuery(functionCallingBaseModel):
+    """Database query function"""
     query = Field(
-        description="Search query string",
+        description="SQL query string",
         field_type="string"
+    )
+    database = Field(
+        description="Target database",
+        enum=["users", "products", "orders"]
     )
     limit = Field(
         description="Maximum number of results",
         field_type="integer",
         optional=True
     )
+
+# Use the function
+llm.tool_pack = DatabaseQuery
+response = llm.infer(
+    api_key="your-api-key",
+    user_message="Show me the top 5 users by order value"
+)
 ```
 
-## Advanced Features
+## Advanced Usage
 
-### 1. Response Extraction
-Specialized extractors for different response types:
-- `openai_chat_content_extraction`: Basic chat responses
-- `openai_function_call_extraction`: Function calling responses
-- `openai_structured_output_extraction`: JSON schema responses
-- `openai_token_usage_tracker`: Usage tracking
+### 1. Streaming Responses
+```python
+llm.streaming = True
+response = llm.infer(
+    api_key="your-api-key",
+    user_message="Write a long story"
+)
 
-### 2. Error Handling
-Built-in retry mechanism for API calls:
-
-```93:101:pdmInfra/ai/LLM_inference/__init__.py
-def retry(func):
-    def wrapper(*args, **kwargs):
-        for i in range(3):
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                print(e)
-                continue
-    return wrapper
+for chunk in response:
+    print(chunk, end="", flush=True)
 ```
 
+### 2. Complex Schemas
+```python
+class Address(structuredOutputBaseModel):
+    """Address information"""
+    street = Field(description="Street address")
+    city = Field(description="City name")
+    country = Field(description="Country name")
+    postal_code = Field(description="Postal code", optional=True)
 
-### 3. Streaming Support
-Streaming capabilities for real-time responses:
+class UserProfile(structuredOutputBaseModel):
+    """User profile information"""
+    name = Field(description="User's full name")
+    age = Field(description="User's age", field_type="integer")
+    email = Field(description="Email address")
+    addresses = Field(
+        description="User's addresses",
+        field_type="array",
+        children=Address
+    )
 
-```198:213:pdmInfra/ai/LLM_inference/__init__.py
-        if streaming:
-            def generate():
-                for line in response.iter_lines():
-                    if line:
-                        line = line.decode('utf-8')
-                        if line.startswith('data: '):
-                            line = line[6:]  # Remove 'data: ' prefix
-                        if line != '[DONE]':
-                            try:
-                                chunk = json.loads(line)
-                                delta = chunk['choices'][0]['delta']
-                                if 'content' in delta:
-                                    yield delta['content']
-                            except json.JSONDecodeError:
-                                print(f"Error decoding JSON: {line}")
-            return generate()
+# Use nested schema
+llm.structured_output = UserProfile
+response = llm.infer(
+    api_key="your-api-key",
+    user_message="Get user profile for ID: 12345"
+)
 ```
 
+### 3. Multiple Function Calls
+```python
+class WeatherAPI(functionCallingBaseModel):
+    """Get weather data"""
+    location = Field(description="City name")
+    units = Field(enum=["celsius", "fahrenheit"])
 
-## Configuration
+class NewsAPI(functionCallingBaseModel):
+    """Get news headlines"""
+    topic = Field(description="News topic")
+    count = Field(field_type="integer", optional=True)
 
-### Supported Models
-Current model support:
-
-```7:10:pdmInfra/ai/param.py
-validLLMList = ['gpt-4o-2024-08-06', 'gpt-4o-mini-2024-07-18', 'gpt-4o', 'gpt-4o-mini']
-openaiLLMList = ['gpt-4o-2024-08-06', 'gpt-4o-mini-2024-07-18', 'gpt-4o', 'gpt-4o-mini']
-pplxLLMList = []
-mistralLLMList = []
+# Use multiple functions
+llm.tool_pack = [WeatherAPI, NewsAPI]
+response = llm.infer(
+    api_key="your-api-key",
+    user_message="What's the weather and news in London?"
+)
 ```
 
+## Provider-Specific Features
 
-### API Endpoints
+### OpenAI
 
-```12:12:pdmInfra/ai/param.py
-openaiURL = "https://api.openai.com/v1/chat/completions"
+#### Reasoning Models
+```python
+llm.model = "o1-2024-12-17"
+llm.reasoning_effort = "high"  # Options: low, medium, high
+response = llm.infer(
+    api_key="your-api-key",
+    user_message="Solve this complex math problem"
+)
 ```
 
+#### Cost Tracking
+```python
+llm.cost_tracker = True
+response, usage = llm.infer(
+    api_key="your-api-key",
+    user_message="Generate a report"
+)
+print(f"Tokens used: {usage}")
+```
+
+### Anthropic
+
+#### High Token Limit
+```python
+llm.model = "claude-3-7-sonnet-20250219"
+response = llm.infer(
+    api_key="your-anthropic-key",
+    user_message="Write a detailed analysis"
+)
+```
+
+### Mistral
+
+#### Temperature Control
+```python
+llm.model = "mistral-large-latest"
+llm.temperature = 0.7
+response = llm.infer(
+    api_key="your-mistral-key",
+    user_message="Generate creative ideas"
+)
+```
 
 ## Best Practices
 
-1. **Message History Management**
-   - Always maintain proper message order
-   - Use the `openai_message_history` class for complex conversations
-   - Validate function calls and tool responses
+### 1. Model Selection
+Choose models based on task requirements:
+- General tasks: `gpt-4o` or `claude-3-5-sonnet`
+- Complex reasoning: `o1-2024-12-17` with high reasoning effort
+- Efficient responses: `claude-3-5-haiku` or `mistral-small`
 
-2. **Schema Definition**
-   - Use descriptive field names and descriptions
-   - Leverage optional fields when appropriate
-   - Use enums to restrict possible values
-   - Implement proper validation for array types
+### 2. Schema Design
+- Use clear, descriptive field names
+- Provide detailed field descriptions
+- Make fields optional when appropriate
+- Use enums to restrict possible values
+- Structure nested data logically
 
-3. **Error Handling**
-   - Always handle API errors gracefully
-   - Use the built-in retry mechanism for transient failures
-   - Implement proper logging for production environments
+### 3. Error Handling
+```python
+try:
+    response = llm.infer(
+        api_key="your-api-key",
+        user_message="Hello"
+    )
+except ValueError as e:
+    print(f"Invalid input: {e}")
+except RuntimeError as e:
+    print(f"API error: {e}")
+```
 
-4. **Performance Optimization**
-   - Use streaming for long responses
-   - Implement proper timeout handling
-   - Monitor token usage with cost tracking
+### 4. Resource Management
+- Use streaming for long responses
+- Enable cost tracking for production
+- Set appropriate max_tokens
+- Implement rate limiting
+
+## Error Handling
+
+### Common Errors
+
+1. Authentication Errors
+```python
+# Invalid API key format
+try:
+    llm.model = "gpt-4o"
+    response = llm.infer(
+        api_key="invalid-key",
+        user_message="Hello"
+    )
+except ValueError as e:
+    print("Invalid API key format")
+```
+
+2. Model Compatibility
+```python
+# Streaming with structured output
+try:
+    llm.streaming = True
+    llm.structured_output = WeatherResponse
+    response = llm.infer(
+        api_key="your-api-key",
+        user_message="Get weather"
+    )
+except ValueError as e:
+    print("Streaming not compatible with structured output")
+```
+
+3. Schema Validation
+```python
+# Invalid schema definition
+try:
+    class InvalidSchema(structuredOutputBaseModel):
+        field = Field(field_type="invalid")
+except ValueError as e:
+    print("Invalid field type")
+```
 
 ## Limitations
 
-1. **Model Support**
-   - Currently only supports OpenAI models
-   - Future support planned for:
-     - Anthropic Claude
-     - Mistral AI
-     - Local models
+1. **Provider-Specific Features**
+   - Some features are only available with specific providers
+   - Streaming limitations vary by provider
+   - Response formats may differ slightly between providers
 
-2. **Streaming Limitations**
-   - Cannot be used with structured output
-   - Cannot be used with function calling
-   - Limited error handling in streaming mode
+2. **Authentication**
+   - Each provider requires its own API key
+   - Different key format validation per provider:
+     - OpenAI: Must start with `sk-`
+     - Anthropic: Must start with `sk-ant`
+     - Mistral: No specific format requirement
+
+3. **Streaming Limitations**
+   - Not compatible with structured output
+   - Not compatible with function calling
+   - Provider-specific implementation differences
 
 ## Future Enhancements
 
-1. **Additional Model Support**
-   - Integration with more LLM providers
-   - Support for local model deployment
-   - Custom model fine-tuning support
+1. **Additional Providers**
+   - Google (Gemini)
+   - Perplexity
+   - Meta
+   - DeepSeek
+   - Hugging Face
 
 2. **Enhanced Features**
+   - Cross-provider cost optimization
+   - Automatic provider fallback
+   - Enhanced streaming support
    - Improved error handling
-   - Advanced retry strategies
-   - Better streaming support
-   - Enhanced schema validation
 
 3. **Performance Improvements**
-   - Caching mechanisms
-   - Batch processing
+   - Response caching
    - Parallel inference
-   - Response optimization
+   - Rate limiting and quota management
+   - Batch processing capabilities

@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - JSON Schema missing "object" type fixed
 - Cost Tracking
+- Added Support for Anthropic and Mistral
 
 ## [0.1.1] - 2024-11-18
 ### Removed

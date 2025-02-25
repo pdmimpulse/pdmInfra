@@ -2,14 +2,14 @@
 
 ## Table of Contents
 1. [Installation](#installation)
-2. [AI Module](#ai-module)
+2. [Basic Usage](#basic-usage)
+   - [Provider Selection](#provider-selection)
    - [Basic Chat](#basic-chat)
    - [Structured Output](#structured-output)
    - [Function Calling](#function-calling)
    - [Chat History](#chat-history)
    - [Streaming](#streaming)
-   - [Cost Tracking](#cost-tracking)
-3. [AWS Module](#aws-module)
+   - [Provider-Specific Features](#provider-specific-features)
 
 ## Installation
 
@@ -17,11 +17,11 @@
 pip install pdmInfra
 ```
 
-## AI Module
+## Basic Usage
 
-### Basic Chat
+### Provider Selection
 
-The simplest way to use the AI module is through basic chat:
+The library supports multiple LLM providers through a unified interface:
 
 ```python
 from pdmInfra.ai import InferenceClass
@@ -29,11 +29,49 @@ from pdmInfra.ai import InferenceClass
 # Initialize the inference class
 llm = InferenceClass()
 llm.system_message = "You are a helpful assistant."
-llm.model = "gpt-4o"
 
-# Make a simple inference
+# Use OpenAI
+llm.model = "gpt-4o"
 response = llm.infer(
-    api_key="your-api-key",
+    api_key="your-openai-key",
+    user_message="What is the capital of France?"
+)
+
+# Switch to Anthropic
+llm.model = "claude-3-7-sonnet-20250219"
+response = llm.infer(
+    api_key="your-anthropic-key",
+    user_message="Explain quantum computing"
+)
+
+# Use Mistral
+llm.model = "mistral-large-latest"
+response = llm.infer(
+    api_key="your-mistral-key",
+    user_message="Summarize this article"
+)
+```
+
+### Basic Chat
+
+Simple chat interactions work consistently across providers:
+
+```python
+llm = InferenceClass()
+llm.system_message = "You are a helpful assistant."
+
+# With OpenAI
+llm.model = "gpt-4o"
+response = llm.infer(
+    api_key="your-openai-key",
+    user_message="What is the capital of France?"
+)
+print(response)  # Paris
+
+# With Anthropic
+llm.model = "claude-3-5-sonnet-20241022"
+response = llm.infer(
+    api_key="your-anthropic-key",
     user_message="What is the capital of France?"
 )
 print(response)  # Paris
@@ -41,7 +79,7 @@ print(response)  # Paris
 
 ### Structured Output
 
-For structured responses, define a schema using `structuredOutputBaseModel`:
+Define schemas that work across all providers:
 
 ```python
 from pdmInfra.ai.json_schema import structuredOutputBaseModel, Field
@@ -56,18 +94,27 @@ class PersonInfo(structuredOutputBaseModel):
         array_type="string"
     )
 
-# Use the schema
+# Use with any provider
 llm = InferenceClass()
 llm.system_message = "You are a helpful information extractor."
-llm.model = "gpt-4o"
 
+# With OpenAI
+llm.model = "gpt-4o"
 response = llm.infer(
-    api_key="your-api-key",
+    api_key="your-openai-key",
     user_message="John Doe is 30 years old and enjoys reading and hiking.",
     structured_output=PersonInfo
 )
 
-print(response)
+# With Anthropic
+llm.model = "claude-3-7-sonnet-20250219"
+response = llm.infer(
+    api_key="your-anthropic-key",
+    user_message="Jane Smith is 25 years old and enjoys painting and music.",
+    structured_output=PersonInfo
+)
+
+# Response format is consistent across providers:
 # {
 #     "name": "John Doe",
 #     "age": 30,
@@ -77,7 +124,7 @@ print(response)
 
 ### Function Calling
 
-Define functions using `functionCallingBaseModel`:
+Define functions that work across providers:
 
 ```python
 from pdmInfra.ai.json_schema import functionCallingBaseModel, Field
@@ -91,21 +138,39 @@ class WeatherLookup(functionCallingBaseModel):
         optional=True
     )
 
-# Use function calling
-llm = InferenceClass()
-llm.system_message = "You are a weather assistant."
-llm.model = "gpt-4o"
+class NewsLookup(functionCallingBaseModel):
+    """Look up news headlines"""
+    topic = Field(description="News topic")
+    count = Field(
+        description="Number of headlines",
+        field_type="integer",
+        optional=True
+    )
 
+# Use single or multiple functions
+llm = InferenceClass()
+llm.system_message = "You are a helpful assistant."
+
+# Single function with OpenAI
+llm.model = "gpt-4o"
+llm.tool_pack = WeatherLookup
 response = llm.infer(
-    api_key="your-api-key",
-    user_message="What's the weather in Paris?",
-    tool_pack=WeatherLookup
+    api_key="your-openai-key",
+    user_message="What's the weather in Paris?"
+)
+
+# Multiple functions with Anthropic
+llm.model = "claude-3-7-sonnet-20250219"
+llm.tool_pack = [WeatherLookup, NewsLookup]
+response = llm.infer(
+    api_key="your-anthropic-key",
+    user_message="What's the weather and news in London?"
 )
 ```
 
 ### Chat History
 
-Manage conversation history using `openai_message_history`:
+Manage conversation history consistently across providers:
 
 ```python
 from pdmInfra.ai.LLM_inference.openai_tools import openai_message_history
@@ -118,30 +183,46 @@ history.add_user_message("What's the weather in Paris?")
 history.add_assistant_message("It's currently sunny and 22°C in Paris.")
 history.add_user_message("And what about London?")
 
-# Use history in inference
+# Use history with any provider
 llm = InferenceClass()
 llm.system_message = "You are a weather assistant."
-llm.model = "gpt-4o"
 
+# With OpenAI
+llm.model = "gpt-4o"
 response = llm.infer(
-    api_key="your-api-key",
+    api_key="your-openai-key",
+    chat_history=history
+)
+
+# With Mistral
+llm.model = "mistral-large-latest"
+response = llm.infer(
+    api_key="your-mistral-key",
     chat_history=history
 )
 ```
 
 ### Streaming
 
-Enable streaming for real-time responses:
+Enable streaming for real-time responses (provider-dependent):
 
 ```python
 llm = InferenceClass()
 llm.system_message = "You are a helpful assistant."
-llm.model = "gpt-4o"
 llm.streaming = True
 
-# Stream the response
+# With OpenAI
+llm.model = "gpt-4o"
 for chunk in llm.infer(
-    api_key="your-api-key",
+    api_key="your-openai-key",
+    user_message="Tell me a long story about a dragon."
+):
+    print(chunk, end='', flush=True)
+
+# With Anthropic
+llm.model = "claude-3-7-sonnet-20250219"
+for chunk in llm.infer(
+    api_key="your-anthropic-key",
     user_message="Tell me a long story about a dragon."
 ):
     print(chunk, end='', flush=True)
@@ -149,18 +230,29 @@ for chunk in llm.infer(
 
 Note: Streaming cannot be used with structured output or function calling.
 
-### Cost Tracking
+### Provider-Specific Features
 
-Track token usage:
+#### OpenAI
 
+1. Reasoning Models with Effort Control:
 ```python
 llm = InferenceClass()
-llm.system_message = "You are a helpful assistant."
+llm.model = "o1-2024-12-17"
+llm.reasoning_effort = "high"  # Options: low, medium, high
+response = llm.infer(
+    api_key="your-openai-key",
+    user_message="Solve this complex math problem"
+)
+```
+
+2. Cost Tracking:
+```python
+llm = InferenceClass()
 llm.model = "gpt-4o"
 llm.cost_tracker = True
 
 response, usage = llm.infer(
-    api_key="your-api-key",
+    api_key="your-openai-key",
     user_message="What is quantum computing?"
 )
 
@@ -168,76 +260,61 @@ print(f"Response: {response}")
 print(f"Token usage: {usage}")
 ```
 
-## AWS Module
+#### Anthropic
 
-### S3 Operations
-
-Basic S3 operations:
-
+High Token Limit:
 ```python
-from pdmInfra.aws.s3 import (
-    create_bucket,
-    s3_put_object,
-    s3_get_object,
-    s3_list_objects,
-    s3_delete_object
+llm = InferenceClass()
+llm.model = "claude-3-7-sonnet-20250219"
+response = llm.infer(
+    api_key="your-anthropic-key",
+    user_message="Write a detailed analysis of War and Peace"
 )
+```
 
-# Create a bucket
-create_bucket("my-test-bucket")
+#### Mistral
 
-# Upload data
-data = {"key": "value"}
-s3_put_object("my-test-bucket", "data.json", data)
-
-# Read data
-content = s3_get_object("my-test-bucket", "data.json")
-
-# List objects
-objects = s3_list_objects("my-test-bucket")
-
-# Delete object
-s3_delete_object("my-test-bucket", "data.json")
+Temperature Control:
+```python
+llm = InferenceClass()
+llm.model = "mistral-large-latest"
+llm.temperature = 0.7
+response = llm.infer(
+    api_key="your-mistral-key",
+    user_message="Generate creative story ideas"
+)
 ```
 
 ## Error Handling
 
-The library includes a retry mechanism for API calls:
+Handle common errors gracefully:
 
+```python
+from pdmInfra.ai import InferenceClass
 
-```93:101:pdmInfra/ai/LLM_inference/__init__.py
-def retry(func):
-    def wrapper(*args, **kwargs):
-        for i in range(3):
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                print(e)
-                continue
-    return wrapper
+llm = InferenceClass()
+llm.system_message = "You are a helpful assistant."
+
+try:
+    # Invalid API key
+    llm.model = "gpt-4o"
+    response = llm.infer(
+        api_key="invalid-key",
+        user_message="Hello"
+    )
+except ValueError as e:
+    print(f"Authentication error: {e}")
+
+try:
+    # Incompatible feature
+    llm.streaming = True
+    llm.structured_output = PersonInfo
+    response = llm.infer(
+        api_key="your-api-key",
+        user_message="Extract info"
+    )
+except ValueError as e:
+    print(f"Compatibility error: {e}")
 ```
 
-
-Common errors to handle:
-- API key validation
-- Model availability
-- Rate limiting
-- Network issues
-- Malformed responses
-
-## Configuration
-
-Available models:
-
-
-```7:10:pdmInfra/ai/param.py
-validLLMList = ['gpt-4o-2024-08-06', 'gpt-4o-mini-2024-07-18', 'gpt-4o', 'gpt-4o-mini']
-openaiLLMList = ['gpt-4o-2024-08-06', 'gpt-4o-mini-2024-07-18', 'gpt-4o', 'gpt-4o-mini']
-pplxLLMList = []
-mistralLLMList = []
-```
-
-
-The library is designed to be extensible for future model additions.
-
-For more detailed information about the implementation details, please refer to the design documentation.
+For more detailed information about the implementation and architecture, please refer to the [Design Documentation](design_documentation.md).
