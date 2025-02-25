@@ -34,45 +34,92 @@ class Field:
 class structuredOutputBaseModel:
     """
     This class represents a base model for generating JSON schemas for LLM structured outputs. 
-
-
-    Attributes:
-        generate_json_schema (class method): A class method to generate a JSON schema for the model.
+    Supports different providers: openai, anthropic, mistral
     """
 
     @classmethod
-    def generate_structured_output(cls):
-        schema = {
-            "type": "json_schema",
-            "json_schema": {
+    def generate_structured_output(cls, provider="openai"):
+        if provider not in ["openai", "anthropic", "mistral"]:
+            raise ValueError("Provider must be one of: openai, anthropic, mistral")
+
+        # Initialize schema based on provider
+        if provider == "openai":
+            schema = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": cls.__name__,
+                    "description": cls.__doc__.strip() if cls.__doc__ else "",
+                    "strict": True,
+                    "schema": {
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": False,
+                        "required": []
+                    },
+                    "strict": True
+                }
+            }
+        elif provider == "mistral":
+            schema = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": cls.__name__.lower(),
+                    "strict": True,
+                    "schema": {
+                        "title": cls.__name__,
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": False,
+                        "required": []
+                    }
+                }
+            }
+        elif provider == "anthropic":
+            schema = {
                 "name": cls.__name__,
                 "description": cls.__doc__.strip() if cls.__doc__ else "",
-                "strict": True,
-
-                "schema": {
+                "input_schema": {
                     "type": "object",
                     "properties": {},
-                    "additionalProperties": False,
                     "required": []
-                },
-            "strict": True
+                }
             }
-        }
 
         for attr_name, attr_value in cls.__dict__.items():
             if isinstance(attr_value, Field):
-                property_schema = {
-                    "type": attr_value.field_type
-                }
+                # Base property schema
+                if provider == "mistral":
+                    property_schema = {
+                        "type": attr_value.field_type,
+                        "title": attr_name.capitalize()
+                    }
+                else:
+                    property_schema = {
+                        "type": attr_value.field_type
+                    }
 
-                if attr_value.description:
+                if attr_value.description and provider != "mistral":
                     property_schema["description"] = attr_value.description
 
                 if attr_value.enum:
                     property_schema["enum"] = attr_value.enum
 
+                # Handle optional fields differently per provider
                 if attr_value.optional:
-                    property_schema["type"] = [attr_value.field_type, "null"]
+                    if provider == "openai" or provider == "anthropic":
+                        property_schema["type"] = [attr_value.field_type, "null"]
+                        if provider == "openai":
+                            schema["json_schema"]["schema"]["required"].append(attr_name)
+                        elif provider == "anthropic":
+                            schema["input_schema"]["required"].append(attr_name)
+                        # For Mistral, we just don't add it to required list
+                else:
+                    # Only add non-optional fields to required list
+                    if provider in ["openai", "mistral"]:
+                        schema["json_schema"]["schema"]["required"].append(attr_name)
+                    elif provider == "anthropic":
+                        schema["input_schema"]["required"].append(attr_name)
+
                 if attr_value.field_type == "array":
                     try: 
                         children_schema = attr_value.children
@@ -88,41 +135,84 @@ class structuredOutputBaseModel:
                         raise TypeError("Array type must have either children or array_type")
                     if children_schema:
                         if isinstance(attr_value.children, type) and issubclass(attr_value.children, structuredOutputBaseModel):
-                            property_schema["items"] = attr_value.children.generate_structured_output()["json_schema"]["schema"]
+                            nested_schema = attr_value.children.generate_structured_output(provider=provider)
+                            if provider == "openai":
+                                property_schema["items"] = nested_schema["json_schema"]["schema"]
+                            elif provider == "mistral":
+                                property_schema["items"] = nested_schema["json_schema"]["schema"]
+                            elif provider == "anthropic":
+                                property_schema["items"] = nested_schema["input_schema"]
                         else:
-                            raise ValueError("Children attribute must be a subclass of JsonSchemaBaseModel")
+                            raise ValueError("Children attribute must be a subclass of structuredOutputBaseModel")
                     elif array_type:
                         property_schema["items"] = {"type": array_type}
                 elif attr_value.field_type == "object":
                     if not isinstance(attr_value.children, type) or not issubclass(attr_value.children, structuredOutputBaseModel):
                         raise ValueError("Object children must be a subclass of structuredOutputBaseModel")
-                    property_schema = attr_value.children.generate_structured_output()["json_schema"]["schema"]
+                    nested_schema = attr_value.children.generate_structured_output(provider=provider)
+                    if provider == "openai":
+                        property_schema = nested_schema["json_schema"]["schema"]
+                    elif provider == "mistral":
+                        property_schema = nested_schema["json_schema"]["schema"]
+                    elif provider == "anthropic":
+                        property_schema = nested_schema["input_schema"]
 
-                schema["json_schema"]["schema"]["required"].append(attr_name)
-
-                schema["json_schema"]["schema"]["properties"][attr_name] = property_schema
+                # Add property to schema
+                if provider in ["openai", "mistral"]:
+                    schema["json_schema"]["schema"]["properties"][attr_name] = property_schema
+                elif provider == "anthropic":
+                    schema["input_schema"]["properties"][attr_name] = property_schema
 
         return schema
 
 class functionCallingBaseModel:
     """
     This class represents a base model for generating function calling tools.
+    Supports different providers: openai, anthropic, mistral
     """
     @classmethod
-    def generate_function_tool(cls):
-        schema = {
-            "type": "function",
-            "function": {
+    def generate_function_tool(cls, provider):
+        if provider not in ["openai", "anthropic", "mistral"]:
+            raise ValueError("Provider must be one of: openai, anthropic, mistral")
+
+        # Initialize the base schema based on provider
+        if provider == "openai":
+            schema = {
+                "type": "function",
+                "function": {
+                    "name": cls.__name__,
+                    "description": cls.__doc__.strip() if cls.__doc__ else "",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": False,
+                        "required": []
+                    }
+                }
+            }
+        elif provider == "anthropic":
+            schema = {
                 "name": cls.__name__,
                 "description": cls.__doc__.strip() if cls.__doc__ else "",
-                "parameters": {
+                "input_schema": {
                     "type": "object",
                     "properties": {},
-                    "additionalProperties": False,
                     "required": []
                 }
             }
-        }
+        elif provider == "mistral":
+            schema = {
+                "type": "function",
+                "function": {
+                    "name": cls.__name__,
+                    "description": cls.__doc__.strip() if cls.__doc__ else "",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                }
+            }
 
         for attr_name, attr_value in cls.__dict__.items():
             if isinstance(attr_value, Field):
@@ -136,6 +226,7 @@ class functionCallingBaseModel:
 
                 if attr_value.optional:
                     property_schema["type"] = [attr_value.field_type, "null"]
+
                 if attr_value.field_type == "array":
                     try: 
                         children_schema = attr_value.children
@@ -151,19 +242,43 @@ class functionCallingBaseModel:
                         raise TypeError("Array type must have either children or array_type")
                     if children_schema:
                         if isinstance(attr_value.children, type) and issubclass(attr_value.children, functionCallingBaseModel):
-                            property_schema["items"] = attr_value.children.generate_function_tool()["function"]["parameters"]
+                            nested_schema = attr_value.children.generate_function_tool(provider=provider)
+                            if provider == "openai":
+                                property_schema["items"] = nested_schema["function"]["parameters"]
+                            elif provider == "anthropic":
+                                property_schema["items"] = nested_schema["input_schema"]
+                            elif provider == "mistral":
+                                property_schema["items"] = nested_schema["function"]["parameters"]
                         else:
-                            raise ValueError("Children attribute must be a subclass of JsonSchemaBaseModel")
+                            raise ValueError("Children attribute must be a subclass of functionCallingBaseModel")
                     elif array_type:
                         property_schema["items"] = {"type": array_type}
                 elif attr_value.field_type == "object":
                     if not isinstance(attr_value.children, type) or not issubclass(attr_value.children, functionCallingBaseModel):
                         raise ValueError("Object children must be a subclass of functionCallingBaseModel")
-                    property_schema = attr_value.children.generate_function_tool()["function"]["parameters"]
-                        
-                if not attr_value.optional:
-                    schema["function"]["parameters"]["required"].append(attr_name)
+                    nested_schema = attr_value.children.generate_function_tool(provider=provider)
+                    if provider == "openai":
+                        property_schema = nested_schema["function"]["parameters"]
+                    elif provider == "anthropic":
+                        property_schema = nested_schema["input_schema"]
+                    elif provider == "mistral":
+                        property_schema = nested_schema["function"]["parameters"]
 
-                schema["function"]["parameters"]["properties"][attr_name] = property_schema
+                # Add to required list if not optional
+                if not attr_value.optional:
+                    if provider == "openai":
+                        schema["function"]["parameters"]["required"].append(attr_name)
+                    elif provider == "anthropic":
+                        schema["input_schema"]["required"].append(attr_name)
+                    elif provider == "mistral":
+                        schema["function"]["parameters"]["required"].append(attr_name)
+
+                # Add property to schema
+                if provider == "openai":
+                    schema["function"]["parameters"]["properties"][attr_name] = property_schema
+                elif provider == "anthropic":
+                    schema["input_schema"]["properties"][attr_name] = property_schema
+                elif provider == "mistral":
+                    schema["function"]["parameters"]["properties"][attr_name] = property_schema
 
         return schema
