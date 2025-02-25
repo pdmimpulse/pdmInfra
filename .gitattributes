@@ -1,3 +1,9 @@
+# Mark files as documentation for language statistics
 README.md linguist-documentation
 design_documentation.md linguist-documentation
 usage_documentation.md linguist-documentation
+
+# Pin files to the repository sidebar
+README.md linguist-pinned
+design_documentation.md linguist-pinned
+usage_documentation.md linguist-pinned
