@@ -7,7 +7,7 @@ A Python infrastructure library for AI application development, providing a unif
 Install via pip:
 
 ```bash
-pip install pdmInfra
+pip install git+https://github.com/pdmimpulse/pdmInfra.git@0.2.0
 ```
 
 ## Features

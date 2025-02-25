@@ -39,7 +39,7 @@ All providers are accessed through the same `InferenceClass`, which handles:
 ## Installation
 
 ```bash
-pip install pdm-infra
+pip install git+https://github.com/pdmimpulse/pdmInfra.git@0.2.0
 ```
 
 ## Quick Start

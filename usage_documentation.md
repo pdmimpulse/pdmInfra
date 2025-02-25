@@ -14,7 +14,7 @@
 ## Installation
 
 ```bash
-pip install pdmInfra
+pip install git+https://github.com/pdmimpulse/pdmInfra.git@0.2.0
 ```
 
 ## Basic Usage
