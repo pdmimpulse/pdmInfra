@@ -16,7 +16,7 @@ mistralLLMList = ["mistral-large-latest", "mistral-small"]
 anthropicLLMList = ["claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022"]
 metaLLMList = []
 deepseekLLMList = []
-huggingfaceLLMList = []
+huggingfaceLLMList = ["llama-3.1-8b-instruct"]
 
 validLLMList = openaiLLMList + pplxLLMList + mistralLLMList + anthropicLLMList + metaLLMList + deepseekLLMList + huggingfaceLLMList
 
@@ -26,6 +26,11 @@ pplxURL = "https://api.perplexity.ai/chat/completions"
 mistralURL = "https://api.mistral.ai/v1/chat/completions"
 anthropicURL = "https://api.anthropic.com/v1/messages"
 googleURL = ""
+
+# Define the endpoint mapping
+huggingfaceEndpoints = {
+    "llama-3.1-8b-instruct": "https://onwo2dlum30a3ddv.eu-west-1.aws.endpoints.huggingface.cloud/v1/chat/completions"
+}
 
 
 
