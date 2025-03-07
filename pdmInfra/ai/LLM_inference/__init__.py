@@ -10,7 +10,7 @@ import json
 from pdmInfra.ai.param import *
 from pdmInfra.ai.LLM_inference.openai_tools import openai_message_history
 from pdmInfra.ai.json_schema import structuredOutputBaseModel, functionCallingBaseModel
-from pdmInfra.ai.LLM_inference.providers import openai_inference, anthropic_inference, mistral_inference
+from pdmInfra.ai.LLM_inference.providers import openai_inference, anthropic_inference, mistral_inference, huggingface_inference
 
 class InferenceClass:
     """
