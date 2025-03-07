@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 - JSON Schema missing "object" type fixed
 - Cost Tracking
 - Added Support for Anthropic, Mistral, and Llama3.1 8B on Huggingface-AWS
+- Added dependency requirement in setup.py
 
 ## [0.1.1] - 2024-11-18
 ### Removed

@@ -8,4 +8,7 @@ setup(
     author="Yiyang Lu",
     author_email="y.lu@pdm-solutions.com",
     description="pdm impulse team infrastructure for AI application development",
+    install_requires=[
+        "requests",
+    ],
 )
