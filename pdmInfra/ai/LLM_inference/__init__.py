@@ -140,5 +140,20 @@ class InferenceClass:
                 tool_pack=self.tool_pack,
                 max_tokens=self.max_tokens
             )
+        elif self.model in huggingfaceLLMList:
+            return huggingface_inference(
+                system_message=self.system_message,
+                user_message=self.user_message,
+                model=self.model,
+                api_key=self.api_key,
+                chat_history=self.chat_history,
+                temperature=self.temperature,
+                streaming=self.streaming,
+                tool_pack=self.tool_pack,
+                structured_output=self.structured_output,
+                seed=self.seed,
+                cost_tracker=self.cost_tracker,
+                max_tokens=self.max_tokens
+            )
         else:
             raise ValueError(f"Model {self.model} is not yet supported")
