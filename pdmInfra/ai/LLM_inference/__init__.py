@@ -151,8 +151,6 @@ class InferenceClass:
                 streaming=self.streaming,
                 tool_pack=self.tool_pack,
                 structured_output=self.structured_output,
-                seed=self.seed,
-                cost_tracker=self.cost_tracker,
                 max_tokens=self.max_tokens
             )
         else:
