@@ -6,7 +6,7 @@ import json
 import re
 from pdmInfra.ai.json_schema import structuredOutputBaseModel, functionCallingBaseModel
 from pdmInfra.ai.LLM_inference.openai_tools import openai_message_history
-from pdmInfra.ai.param import huggingfaceEndpoints
+from pdmInfra.ai.param import huggingfaceEndpoints, huggingfaceLLMList
 
 def huggingface_structured_output_extraction(response):
     """Extract structured output content from HuggingFace response"""
@@ -81,14 +81,14 @@ def huggingface_inference(
     """Handle inference requests specifically for HuggingFace models."""
     
     # Get the endpoint URL for the model
-    if model not in huggingfaceEndpoints:
+    if model not in huggingfaceLLMList:
         raise ValueError(f"Model {model} is not supported by HuggingFace endpoints")
     
     url = huggingfaceEndpoints[model]
     
     # Prepare the payload
     payload = {
-        "model": model,
+        "model": "tgi",
         "messages": [],
         "temperature": temperature
     }
