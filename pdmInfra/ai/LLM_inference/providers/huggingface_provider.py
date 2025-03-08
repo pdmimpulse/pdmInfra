@@ -121,7 +121,7 @@ def huggingface_inference(
         
         # Add instructions for structured output
         schema_str = json.dumps(structured_output.generate_structured_output("openai"), indent=2)
-        payload["messages"][-1]["content"] += f"\n\nPlease format your response as a JSON object according to this schema:\n{schema_str}"
+        payload["messages"][-1]["content"] += f"\n\nPlease format your response as a JSON object according to this schema:\n{schema_str}\n\nPlease return the JSON object only, do not include any other text or comments and only return once. "
     
     # Handle function calling tools
     if tool_pack:
