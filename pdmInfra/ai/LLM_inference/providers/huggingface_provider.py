@@ -11,6 +11,7 @@ from pdmInfra.ai.param import huggingfaceEndpoints, huggingfaceLLMList
 def huggingface_structured_output_extraction(response):
     """Extract structured output content from HuggingFace response"""
     try:
+        print(f"[huggingface_provider][huggingface_structured_output_extraction][input] response: {response}")
         content = response['choices'][0]['message']['content']
         
         # Try to extract JSON from potential markdown code blocks
@@ -183,7 +184,7 @@ def huggingface_inference(
     # Handle non-streaming response
     response = requests.post(url, json=payload, headers=headers)
     response_json = response.json()
-    
+    print(f"[huggingface_provider][huggingface_inference][result] response: {response}")
     # Process response based on request type
     if structured_output:
         return huggingface_structured_output_extraction(response_json)
