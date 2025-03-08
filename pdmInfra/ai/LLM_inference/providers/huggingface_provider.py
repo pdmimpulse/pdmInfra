@@ -121,7 +121,7 @@ def huggingface_inference(
         
         # Add instructions for structured output
         schema_str = json.dumps(structured_output.generate_structured_output("openai"), indent=2)
-        payload["messages"][-1]["content"] += f"\n\n\n\nThe output should be a valid JSON object that matches the following schema:\n\n{schema_str}\n\nOnly output the JSON object, do not include any other text or comments."
+        payload["messages"][-1]["content"] += f"\n\n\n\nThe output should be a valid JSON object that matches the following schema:\n\n{schema_str}\n\nOnly output the JSON object in the following format: {{\"$ATTRIBUTE1\": \"$VALUE1\", \"$ATTRIBUTE2\": \"$VALUE2\", ...}}, do not include any other text or comments."
     
     # Handle function calling tools
     if tool_pack:
@@ -184,7 +184,6 @@ def huggingface_inference(
     # Handle non-streaming response
     response = requests.post(url, json=payload, headers=headers)
     response_json = response.json()
-    print(f"[huggingface_provider][huggingface_inference][result] response: {response}")
     # Process response based on request type
     if structured_output:
         return huggingface_structured_output_extraction(response_json)
