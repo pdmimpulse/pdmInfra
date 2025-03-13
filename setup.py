@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="pdmInfra",
-    version="0.2.0",
+    version="0.2.1",
     packages=find_packages(include=["pdmInfra", "pdmInfra.*"]),
     url="https://github.com/pdmimpulse/pdmInfra.git",
     author="Yiyang Lu",
