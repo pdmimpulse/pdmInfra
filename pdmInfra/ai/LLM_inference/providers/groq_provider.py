@@ -108,12 +108,14 @@ def groq_inference(
         return generate()
 
     # Process the response based on request type
-    if tool_pack or structured_output:
+    if tool_pack:
         try:
             response.json()['choices'][0]['message']['tool_calls']
             output = openai_function_call_extraction(response.json())
         except:
             output = openai_chat_content_extraction(response.json())
+    elif structured_output:
+        output = openai_function_call_extraction(response.json())[0]["arguments"] # Hot patch for groq structured output since it returns a list of tool calls
     else: 
         output = openai_chat_content_extraction(response.json())
 
