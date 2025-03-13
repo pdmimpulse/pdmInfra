@@ -19,6 +19,8 @@ pip install git+https://github.com/pdmimpulse/pdmInfra.git@0.2.0
   - OpenAI (standard and reasoning models)
   - Anthropic Claude
   - Mistral AI
+  - Groq
+  - HuggingFace
 - Provider-agnostic features:
   - Chat completions
   - Function/tool calling
@@ -44,6 +46,16 @@ pip install git+https://github.com/pdmimpulse/pdmInfra.git@0.2.0
 - Temperature control
 - Max tokens limit
 - Structured output support
+
+##### Groq
+- High-performance inference
+- OpenAI-compatible API
+- Support for multiple open-source models
+
+##### HuggingFace
+- Hosted models integration
+- Structured output extraction from text
+- Tool/function call extraction from responses
 
 #### Schema System
 - Provider-agnostic schema definitions
@@ -81,10 +93,10 @@ response = llm.infer(
     structured_output=UserProfile
 )
 
-# Switch to Anthropic
-llm.model = "claude-3-7-sonnet-20250219"
+# Switch to Groq
+llm.model = "llama-3.1-8b-instant-groq"
 response = llm.infer(
-    api_key="your-anthropic-key",
+    api_key="your-groq-key",
     user_message="Extract profile: Jane Smith, 25, enjoys painting and music",
     structured_output=UserProfile
 )
@@ -111,6 +123,18 @@ Reasoning Models:
 ### Mistral Models
 - `mistral-large-latest`
 - `mistral-small`
+
+### Groq Models
+- `qwen-qwq-32b-groq`
+- `qwen-2.5-coder-32b-groq`
+- `qwen-2.5-32b-groq`
+- `deepseek-r1-distill-qwen-32b-groq`
+- `deepseek-r1-distill-llama-70b-groq`
+- `llama-3.3-70b-versatile-groq`
+- `llama-3.1-8b-instant-groq`
+
+### HuggingFace Models
+- `llama-3.1-8b-instruct`
 
 ## Requirements
 

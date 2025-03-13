@@ -22,6 +22,8 @@ Currently supports:
 - OpenAI (including specialized reasoning models)
 - Anthropic Claude
 - Mistral AI
+- Groq
+- HuggingFace (hosted models)
 
 ### 2. Unified Interface
 All providers are accessed through the same `InferenceClass`, which handles:
@@ -76,6 +78,20 @@ response = llm.infer(
     api_key="your-mistral-key",
     user_message="Summarize this article"
 )
+
+# Use Groq
+llm.model = "llama-3.1-8b-instant-groq"
+response = llm.infer(
+    api_key="your-groq-key",
+    user_message="Explain how transformers work"
+)
+
+# Use HuggingFace
+llm.model = "llama-3.1-8b-instruct"
+response = llm.infer(
+    api_key="your-huggingface-key",
+    user_message="What is machine learning?"
+)
 ```
 
 ## Core Components
@@ -115,6 +131,18 @@ Reasoning Models:
 ##### Mistral Models
 - `mistral-large-latest`
 - `mistral-small`
+
+##### Groq Models
+- `qwen-qwq-32b-groq`
+- `qwen-2.5-coder-32b-groq`
+- `qwen-2.5-32b-groq`
+- `deepseek-r1-distill-qwen-32b-groq`
+- `deepseek-r1-distill-llama-70b-groq`
+- `llama-3.3-70b-versatile-groq`
+- `llama-3.1-8b-instant-groq`
+
+##### HuggingFace Models
+- `llama-3.1-8b-instruct`
 
 ### 2. Message History Management
 ```python
@@ -301,6 +329,40 @@ response = llm.infer(
 )
 ```
 
+### Groq
+#### High-Performance Inference
+```python
+llm = InferenceClass()
+llm.model = "llama-3.3-70b-versatile-groq"
+response = llm.infer(
+    api_key="your-groq-key",
+    user_message="Write an essay about climate change"
+)
+```
+
+#### Open-Source Model Access
+```python
+# Access Llama models via Groq
+llm.model = "llama-3.1-8b-instant-groq"
+
+# Access Qwen models
+llm.model = "qwen-2.5-32b-groq"
+
+# Access DeepSeek models
+llm.model = "deepseek-r1-distill-llama-70b-groq"
+```
+
+### HuggingFace
+#### Hosted Model Integration
+```python
+llm = InferenceClass()
+llm.model = "llama-3.1-8b-instruct"
+response = llm.infer(
+    api_key="your-huggingface-key",
+    user_message="Explain the concept of attention in neural networks"
+)
+```
+
 ## Best Practices
 
 ### 1. Model Selection
@@ -398,11 +460,11 @@ except ValueError as e:
 ## Future Enhancements
 
 1. **Additional Providers**
-   - Google (Gemini)
-   - Perplexity
-   - Meta
-   - DeepSeek
-   - Hugging Face
+   - Google (Gemini) (in progress)
+   - Perplexity (in progress)
+   - ~~Meta~~ (available via Groq)
+   - ~~DeepSeek~~ (available via Groq)
+   - ~~Hugging Face~~ (partially implemented)
 
 2. **Enhanced Features**
    - Cross-provider cost optimization

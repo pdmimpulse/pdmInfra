@@ -1,6 +1,17 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2025-03-13
+### Added
+- Groq-hosted Models: 
+    - qwen-qwq-32b-groq
+    - qwen-2.5-coder-32b-groq
+    - qwen-2.5-32b-groq
+    - deepseek-r1-distill-qwen-32b-groq
+    - deepseek-r1-distill-llama-70b-groq
+    - llama-3.3-70b-versatile-groq
+    - llama-3.1-8b-instant
+
 ## [0.2.0] - 2025-02-24
 ### Added
 - JSON Schema missing "object" type fixed

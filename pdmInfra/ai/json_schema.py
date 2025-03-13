@@ -34,13 +34,13 @@ class Field:
 class structuredOutputBaseModel:
     """
     This class represents a base model for generating JSON schemas for LLM structured outputs. 
-    Supports different providers: openai, anthropic, mistral
+    Supports different providers: openai, anthropic, mistral, groq
     """
 
     @classmethod
     def generate_structured_output(cls, provider="openai"):
-        if provider not in ["openai", "anthropic", "mistral"]:
-            raise ValueError("Provider must be one of: openai, anthropic, mistral")
+        if provider not in ["openai", "anthropic", "mistral", "groq"]:
+            raise ValueError("Provider must be one of: openai, anthropic, mistral, groq")
 
         # Initialize schema based on provider
         if provider == "openai":
@@ -84,6 +84,20 @@ class structuredOutputBaseModel:
                     "required": []
                 }
             }
+        elif provider == "groq":
+            schema = {
+                "type": "function",
+                "function": {
+                    "name": cls.__name__,
+                    "description": cls.__doc__.strip() if cls.__doc__ else "",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": False,
+                        "required": []
+                    }
+                }
+            }
 
         for attr_name, attr_value in cls.__dict__.items():
             if isinstance(attr_value, Field):
@@ -119,6 +133,8 @@ class structuredOutputBaseModel:
                         schema["json_schema"]["schema"]["required"].append(attr_name)
                     elif provider == "anthropic":
                         schema["input_schema"]["required"].append(attr_name)
+                    elif provider == "groq":
+                        schema["function"]["parameters"]["required"].append(attr_name)
 
                 if attr_value.field_type == "array":
                     try: 
@@ -162,18 +178,20 @@ class structuredOutputBaseModel:
                     schema["json_schema"]["schema"]["properties"][attr_name] = property_schema
                 elif provider == "anthropic":
                     schema["input_schema"]["properties"][attr_name] = property_schema
+                elif provider == "groq":
+                    schema["function"]["parameters"]["properties"][attr_name] = property_schema
 
         return schema
 
 class functionCallingBaseModel:
     """
     This class represents a base model for generating function calling tools.
-    Supports different providers: openai, anthropic, mistral
+    Supports different providers: openai, anthropic, mistral, groq
     """
     @classmethod
     def generate_function_tool(cls, provider):
-        if provider not in ["openai", "anthropic", "mistral"]:
-            raise ValueError("Provider must be one of: openai, anthropic, mistral")
+        if provider not in ["openai", "anthropic", "mistral", "groq"]:
+            raise ValueError("Provider must be one of: openai, anthropic, mistral, groq")
 
         # Initialize the base schema based on provider
         if provider == "openai":
@@ -201,6 +219,19 @@ class functionCallingBaseModel:
                 }
             }
         elif provider == "mistral":
+            schema = {
+                "type": "function",
+                "function": {
+                    "name": cls.__name__,
+                    "description": cls.__doc__.strip() if cls.__doc__ else "",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                }
+            }
+        elif provider == "groq":
             schema = {
                 "type": "function",
                 "function": {
@@ -266,7 +297,7 @@ class functionCallingBaseModel:
 
                 # Add to required list if not optional
                 if not attr_value.optional:
-                    if provider == "openai":
+                    if provider in ["openai", "groq"]:
                         schema["function"]["parameters"]["required"].append(attr_name)
                     elif provider == "anthropic":
                         schema["input_schema"]["required"].append(attr_name)
@@ -274,7 +305,7 @@ class functionCallingBaseModel:
                         schema["function"]["parameters"]["required"].append(attr_name)
 
                 # Add property to schema
-                if provider == "openai":
+                if provider in ["openai", "groq"]:
                     schema["function"]["parameters"]["properties"][attr_name] = property_schema
                 elif provider == "anthropic":
                     schema["input_schema"]["properties"][attr_name] = property_schema

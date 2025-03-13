@@ -2,7 +2,7 @@
 This modules sends a request to LLM APIs across different providers. This aims to provide a unified interface for different LLM APIs.
 The best practice is to create a InferenceClass object for individual use cases and name the object as per the use case.
 
-Currently supports OpenAI, Anthropic, and Mistral.
+Currently supports OpenAI, Anthropic, Mistral, HuggingFace, and Groq.
 """
 import requests
 import json
@@ -10,7 +10,7 @@ import json
 from pdmInfra.ai.param import *
 from pdmInfra.ai.LLM_inference.openai_tools import openai_message_history
 from pdmInfra.ai.json_schema import structuredOutputBaseModel, functionCallingBaseModel
-from pdmInfra.ai.LLM_inference.providers import openai_inference, anthropic_inference, mistral_inference, huggingface_inference
+from pdmInfra.ai.LLM_inference.providers import openai_inference, anthropic_inference, mistral_inference, huggingface_inference, groq_inference
 
 class InferenceClass:
     """
@@ -145,6 +145,21 @@ class InferenceClass:
                 system_message=self.system_message,
                 user_message=self.user_message,
                 model=self.model,
+                api_key=self.api_key,
+                chat_history=self.chat_history,
+                temperature=self.temperature,
+                streaming=self.streaming,
+                tool_pack=self.tool_pack,
+                structured_output=self.structured_output,
+                max_tokens=self.max_tokens
+            )
+        elif self.model in groqLLMList:
+            # Remove -groq suffix from model name before passing to API
+            groq_model = self.model.replace("-groq", "")
+            return groq_inference(
+                system_message=self.system_message,
+                user_message=self.user_message,
+                model=groq_model,  # Use model name without -groq suffix
                 api_key=self.api_key,
                 chat_history=self.chat_history,
                 temperature=self.temperature,
