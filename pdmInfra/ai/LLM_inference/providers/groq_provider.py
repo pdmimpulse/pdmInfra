@@ -17,7 +17,7 @@ def groq_inference(
     api_key: str,
     user_message=None,
     chat_history=None,
-    temperature: float = 0,
+    temperature: float = 0.0,
     streaming: bool = False,
     tool_pack=None,
     structured_output=None,

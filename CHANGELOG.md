@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
     - deepseek-r1-distill-qwen-32b-groq
     - deepseek-r1-distill-llama-70b-groq
     - llama-3.3-70b-versatile-groq
-    - llama-3.1-8b-instant
+    - llama-3.1-8b-instant-groq
 
 ## [0.2.0] - 2025-02-24
 ### Added

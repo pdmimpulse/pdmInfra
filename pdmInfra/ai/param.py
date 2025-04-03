@@ -41,7 +41,7 @@ groqURL = "https://api.groq.com/openai/v1/chat/completions"
 
 # Define the endpoint mapping
 huggingfaceEndpoints = {
-    "llama-3.1-8b-instruct": "https://onwo2dlum30a3ddv.eu-west-1.aws.endpoints.huggingface.cloud/v1/chat/completions"
+    "llama-3.1-8b-instruct": "https://example.eu-west-1.aws.endpoints.huggingface.cloud/v1/chat/completions"
 }
 
 

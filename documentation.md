@@ -86,12 +86,6 @@ response = llm.infer(
     user_message="Explain how transformers work"
 )
 
-# Use HuggingFace
-llm.model = "llama-3.1-8b-instruct"
-response = llm.infer(
-    api_key="your-huggingface-key",
-    user_message="What is machine learning?"
-)
 ```
 
 ## Core Components
@@ -141,8 +135,6 @@ Reasoning Models:
 - `llama-3.3-70b-versatile-groq`
 - `llama-3.1-8b-instant-groq`
 
-##### HuggingFace Models
-- `llama-3.1-8b-instruct`
 
 ### 2. Message History Management
 ```python
@@ -352,16 +344,6 @@ llm.model = "qwen-2.5-32b-groq"
 llm.model = "deepseek-r1-distill-llama-70b-groq"
 ```
 
-### HuggingFace
-#### Hosted Model Integration
-```python
-llm = InferenceClass()
-llm.model = "llama-3.1-8b-instruct"
-response = llm.infer(
-    api_key="your-huggingface-key",
-    user_message="Explain the concept of attention in neural networks"
-)
-```
 
 ## Best Practices
 

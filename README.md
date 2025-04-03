@@ -1,13 +1,13 @@
 # PDM Infrastructure Library
 
-A Python infrastructure library for AI application development, providing a unified interface for interacting with multiple Large Language Model (LLM) providers through a consistent API.
+A Python infrastructure library for AI application development, providing a light-weight unified interface for interacting with multiple Large Language Model (LLM) providers through a consistent API. Incrementally built-up based on needs of pdm AI applications. 
 
 ## Installation
 
 Install via pip:
 
 ```bash
-pip install git+https://github.com/pdmimpulse/pdmInfra.git@0.2.0
+pip install git+https://github.com/pdmimpulse/pdmInfra.git@0.2.1
 ```
 
 ## Features
@@ -133,8 +133,6 @@ Reasoning Models:
 - `llama-3.3-70b-versatile-groq`
 - `llama-3.1-8b-instant-groq`
 
-### HuggingFace Models
-- `llama-3.1-8b-instruct`
 
 ## Requirements
 
@@ -150,7 +148,7 @@ For detailed information, see:
 
 ## License
 
-This project is maintained by PDM Impulse Team.
+This project is maintained by pdm AI Innovation Team.
 
 ## Contributing
 
